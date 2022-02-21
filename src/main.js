@@ -133,13 +133,16 @@ const addMetadata = (_dna, _edition) => {
   let tempMetadata = {
     name: `${namePrefix} #${_edition}`,
     description: description,
-    image: `${baseUri}/${_edition}.png`,
-    dna: sha1(_dna),
-    edition: _edition,
-    date: dateTime,
+    file_url: `${baseUri}/${_edition}.png`,
+    custom_fields: {
+      dna: sha1(_dna),
+      edition: _edition,
+      date: dateTime,
+      compiler: "HashLips Art Engine",
+    },
+    //image: `${baseUri}/${_edition}.png`,
     ...extraMetadata,
-    attributes: attributesList,
-    compiler: "HashLips Art Engine",
+    attributes: attributesList,    
   };
   if (network == NETWORK.sol) {
     tempMetadata = {
@@ -173,10 +176,13 @@ const addMetadata = (_dna, _edition) => {
 
 const addAttributes = (_element) => {
   let selectedElement = _element.layer.selectedElement;
-  attributesList.push({
-    trait_type: _element.layer.name,
-    value: selectedElement.name,
-  });
+  if(selectedElement.name.trim().toLowerCase() !==  "blank") {    
+    attributesList.push({
+      trait_type: _element.layer.name,
+      value: selectedElement.name,
+    });
+  }
+
 };
 
 const loadLayerImg = async (_layer) => {
@@ -308,7 +314,16 @@ const writeMetaData = (_data) => {
 };
 
 const saveMetaDataSingleFile = (_editionCount) => {
-  let metadata = metadataList.find((meta) => meta.edition == _editionCount);
+  // alfred - this part is throwing error when using sol network
+  // console.log(metadataList);
+  let metadata;
+  if (network == NETWORK.eth){
+    metadata= metadataList.find((meta) => meta.custom_fields.edition == _editionCount);
+  }
+  else{
+    metadata= metadataList.find((meta) => meta.edition == _editionCount);
+  }
+  
   debugLogs
     ? console.log(
         `Writing metadata for ${_editionCount}: ${JSON.stringify(metadata)}`
@@ -403,7 +418,7 @@ const startCreating = async () => {
             : null;
           saveImage(abstractedIndexes[0]);
           addMetadata(newDna, abstractedIndexes[0]);
-          saveMetaDataSingleFile(abstractedIndexes[0]);
+          saveMetaDataSingleFile(abstractedIndexes[0]); //test method is throwing error when using sol network
           console.log(
             `Created edition: ${abstractedIndexes[0]}, with DNA: ${sha1(
               newDna
